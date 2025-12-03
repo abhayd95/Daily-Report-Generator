@@ -68,15 +68,21 @@ cron.schedule('0 * * * *', async () => {
 cron.schedule('0 2 * * *', async () => {
   try {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupFile = path.join(backupsDir, `backup-${timestamp}.sql`);
+    const backupFile = path.join(backupsDir, `backup-${timestamp}.json`);
     
-    // For production, you would use mysqldump command
-    // This is a simplified version that exports auction data
+    // Get all auctions
     const [auctions] = await pool.execute('SELECT * FROM auctionhub_auctions');
+    
+    // Get cron logs
+    const [cronLogs] = await pool.execute('SELECT * FROM cron_logs ORDER BY executed_at DESC LIMIT 100');
+    
     const backupData = {
       timestamp: new Date().toISOString(),
+      backupType: 'automatic',
       auctions: auctions,
-      totalAuctions: auctions.length
+      cronLogs: cronLogs,
+      totalAuctions: auctions.length,
+      totalCronLogs: cronLogs.length
     };
 
     await fs.writeJSON(backupFile, backupData, { spaces: 2 });
